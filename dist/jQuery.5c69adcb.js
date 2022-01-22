@@ -130,82 +130,7 @@ function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToAr
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
-/*
-jQuery = function(selector){
-    const elements = document.querySelectorAll(selector)
-    const api = {
-        addClass(className){
-            //闭包：函数访问外部变量；
-            for(let i=0;i<elements.length;i++){
-                elements[i].classList.add(className)
-            }
-            return null
-        }
-    }
-    return api  //返回api对象
-    */
-
-/*
-const elements = document.querySelectorAll(selector)
-const api = {
-    addClass(className){
-        for(let i=0;i<elements.length;i++){
-            elements[i].classList.add(className)
-        }
-        return api  //链式操作
-    }
-}
-return api
-*/
-
-/*
-const elements = document.querySelectorAll(selector)
-const api = {
-    addClass(className){
-        for(let i=0;i<elements.length;i++){
-            elements[i].classList.add(className)
-        }
-        return this  //返回this, this 就是 api ;
-    }
-}
-return api  //调用jQuery的时候是用 window.jQuery，所以 this 就是 window;
-*/
-
-/*
-jQuery = function(selector){
-const elements = document.querySelectorAll(selector)
-return {
-    //直接 return 对象，不要额外 const 一个变量；
-    addClass(className){
-        for(let i=0;i<elements.length;i++){
-            elements[i].classList.add(className)
-        }
-        return this  //api没有了，所以这里要用 this ;
-    },
-    find(selector){
-        let array = []
-        for(let i=0;i<elements.length;i++){
-            const elements2 = Array.from(elements[i].querySelectorAll(selector))
-            array = array.concat(elements2)
-        }
-        //return array  //返回数组，链式操作中断；
-        return this     //返回this,但this表示的是find前面那个调用find的对象，而不是find执行后的对象。只能再构造一个新的api对象进行链式操作；
-        
-    }
-}
-}
-*/
-jQuery = function (_jQuery) {
-  function jQuery(_x) {
-    return _jQuery.apply(this, arguments);
-  }
-
-  jQuery.toString = function () {
-    return _jQuery.toString();
-  };
-
-  return jQuery;
-}(function (selectorOrArray) {
+window.$ = window.jQuery = function (selectorOrArray) {
   var elements;
 
   if (typeof selectorOrArray === 'string') {
@@ -214,105 +139,120 @@ jQuery = function (_jQuery) {
     elements = selectorOrArray;
   }
 
-  return {
-    addClass: function addClass(className) {
-      for (var i = 0; i < elements.length; i++) {
-        elements[i].classList.add(className);
-      }
+  function createElement(string) {
+    var container = documents.createElements('template');
+    container.innerHTML = string.trim();
+    return container.content.firstChild;
+  }
 
-      return this;
-    },
-    oldApi: selectorOrArray.oldApi,
-    find: function find(selectorOrArray) {
-      var array = [];
+  var api = Object.create(jQuery.prototype); //创建一个对象，这个对象的 __proto__为括号中的jQuery.prototype;
+  //相当于 const api = {__proto__:jQuery.prototype}
 
-      for (var i = 0; i < elements.length; i++) {
-        var elements2 = Array.from(elements[i].querySelectorAll(selectorOrArray));
-        array = array.concat(elements2);
-      }
-      /*
-      const newApi = jQuery(array)  //此时的 array 是数组，而最开始的 jQuery 参数是选择器，所以需要将参数从selector改为selectorOrArray，再在find这里构造一个新的jQuery对象；
-      return newApi
-      */
+  Object.assign(api, {
+    elements: elements,
+    oldApi: selectorOrArray.oldApi //api.elements = elements
+    //api.oldApi = selectorOrArray.oldApi
 
+  });
+  return api;
+};
 
-      array.oldApi = this; //将调用this的对象放在array上，以便end方法调用,但是没有放在api身上，调用不了，所以再加一个oldApi方法；
-
-      return jQuery(array);
-    },
-    end: function end() {
-      return this.oldApi; //此时的this是find方法调用后新生成的newApi对象；
-    },
-    each: function each(fn) {
-      for (var i = 0; i < elements.length; i++) {
-        fn.call(null, elements[i], i);
-      }
-    },
-    parent: function parent() {
-      var array = [];
-      this.each(function (node) {
-        if (array.indexOf(node.parentNode) === -1) array.push(node.parentNode);
-      });
-      return jQuery(array);
-    },
-    print: function print() {
-      console.log(elements);
-    },
-    children: function children() {
-      var array = [];
-      this.each(function (node) {
-        array.push.apply(array, _toConsumableArray(node.children));
-      });
-      return jQuery(array);
-    },
-    siblings: function siblings() {
-      var array = [];
-      this.each(function (node) {
-        if (array.indexOf(node.parentNode.children) === -1) array.push(Array.from(node.parentNode.children).filter(function (n) {
-          return n !== node;
-        }));
-      });
-      return jQuery(array);
-    },
-    index: function index() {
-      var list = elements[0].parentNode.children;
-      var i;
-
-      for (i = 0; i < list.length; i++) {
-        if (list[i] === elements[0]) break;
-      }
-
-      console.log(i);
-      return this;
-    },
-    next: function next() {
-      var array = [];
-      var x = elements[0].nextSibling;
-
-      if (!x) {
-        return this;
-      } else if (x.nodeType === 3) {
-        x = x.nextSibling;
-        array.push(x);
-      }
-
-      return jQuery(array);
-    },
-    prev: function prev() {
-      var array = [];
-      var x = elements[0].previousSibling;
-
-      if (!x) {
-        return this;
-      } else if (x.nodeType === 3) {
-        x = x.previousSibling;
-        array.push(x);
-      }
-
-      return jQuery(array);
+jQuery.fn = jQuery.prototype = {
+  constructor: jQuery,
+  addClass: function addClass(className) {
+    for (var i = 0; i < this.elements.length; i++) {
+      elements[i].classList.add(className);
     }
-  };
-});
+
+    return this;
+  },
+  find: function find(selectorOrArray) {
+    var array = [];
+
+    for (var i = 0; i < this.elements.length; i++) {
+      var elements2 = Array.from(this.elements[i].querySelectorAll(selectorOrArray));
+      array = array.concat(this.elements2);
+    }
+
+    array.oldApi = this;
+    return jQuery(array);
+  },
+  end: function end() {
+    return this.oldApi;
+  },
+  get: function get(index) {
+    return this.elements[index];
+  },
+  each: function each(fn) {
+    for (var i = 0; i < this.elements.length; i++) {
+      fn.call(null, this.elements[i], i);
+    }
+  },
+  parent: function parent() {
+    var array = [];
+    this.each(function (node) {
+      if (array.indexOf(node.parentNode) === -1) array.push(node.parentNode);
+    });
+    return jQuery(array);
+  },
+  print: function print() {
+    console.log(this.elements);
+  },
+  children: function children() {
+    var array = [];
+    this.each(function (node) {
+      array.push.apply(array, _toConsumableArray(node.children));
+    });
+    return jQuery(array);
+  },
+  siblings: function siblings() {
+    var array = [];
+    this.each(function (node) {
+      if (array.indexOf(node.parentNode.children) === -1) array.push(Array.from(node.parentNode.children).filter(function (n) {
+        return n !== node;
+      }));
+    });
+    return jQuery(array);
+  },
+  index: function index() {
+    console.log(this.elements[0].parentNode);
+    var list = this.elements[0].parentNode.children;
+    var i;
+
+    for (i = 0; i < list.length; i++) {
+      if (list[i] === this.elements[0]) break;
+    }
+
+    console.log(i);
+    return this;
+  },
+  next: function next() {
+    var array = [];
+    var x = this.elements[0].nextSibling;
+
+    if (!x) {
+      return this;
+    } else if (x.nodeType === 3) {
+      x = x.nextSibling;
+      array.push(x);
+    }
+
+    return jQuery(array);
+  },
+  prev: function prev() {
+    var array = [];
+    var x = this.elements[0].previousSibling;
+
+    if (!x) {
+      return this;
+    } else if (x.nodeType === 3) {
+      x = x.previousSibling;
+      array.push(x);
+    }
+
+    return jQuery(array);
+  }
+};
 },{}],"C:/Users/jason-cheng/AppData/Local/Yarn/Data/global/node_modules/parcel/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -341,7 +281,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "51374" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "51623" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
